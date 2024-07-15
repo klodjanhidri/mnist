@@ -9,8 +9,8 @@ import uvicorn
 import os
 
 app = FastAPI()
-MODEL_PATH='/mnt/vol0/minikube/MNIST_MODEL/argo-workflow-bucket/model.pth'
-
+#MODEL_PATH='/mnt/vol0/minikube/MNIST_MODEL/argo-workflow-bucket/model.pth'
+MODEL_PATH='/workspace/model.pth'
 pod_ip = os.environ.get("POD_IP")
 
 @app.get("/")
