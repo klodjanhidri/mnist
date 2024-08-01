@@ -18,6 +18,14 @@ async def read_root():
     print('POD_ID=', pod_ip)
     return {"pod_ip": pod_ip}
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+@app.get("/readiness")
+async def readiness():
+    return {"status": "ready"}
+
 
 class InputData(BaseModel):
     # Define the input data schema
