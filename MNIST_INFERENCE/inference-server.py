@@ -69,4 +69,4 @@ def handle_sigterm(*args):
 
 
 if __name__ == '__main__':
-    uvicorn.run(app='inference-server:app', port=8000, host='0.0.0.0')
+    uvicorn.run(app='inference-server:app', port=8000, reload=True, reload_includes=["model.pth"], host='0.0.0.0')
