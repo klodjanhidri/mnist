@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-downloader
+  namespace: argo
+spec:
+  #completions: 3
+  parallelism: 3
+  ttlSecondsAfterFinished: 2
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch   #hardware  #kubernetes.io/arch #hostname #arch
+                operator: In
+                values:
+                - arm64 #raspberrypi #arm64           
+      containers:
+      - name: downloader
+        image: minio/mc
+        command: ["/bin/sh"]
+        args: ["/scripts/download_from_minio.sh"]
+        volumeMounts:
+        - name: script
+          mountPath: /scripts
+        - name: output
+          mountPath: /outputs
+      restartPolicy: OnFailure
+      volumes:
+      - name: script
+        configMap:
+          name: download-script
+      - name: output
+        persistentVolumeClaim:
+          claimName: inference-weights-claim  #weights-claim 
