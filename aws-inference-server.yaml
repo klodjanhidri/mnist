@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mnist-inference-workflow
+  labels:
+    app: mnist-inference
+  namespace: argo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mnist-inference
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 2
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubernetes.io/change-cause: Restarting pods to apply new weights
+      labels:
+        app: mnist-inference
+        version: v1.0.0
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: hardware  #kubernetes.io/arch
+                operator: In
+                values:
+                - raspberrypi  #arm64
+      containers:
+      - args:
+          - |
+            cd /workspace
+            git clone https://github.com/klodjanhidri/mnist.git
+            cp model.pth mnist/MNIST_INFERENCE
+            cd mnist/MNIST_INFERENCE
+            python3 inference-server.py
+            sleep infinity
+        command:
+        - /bin/sh
+        - -c
+        env:
+        - name: VERSION
+          value: v1.0.0
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        image: klodjanhidri/pytorch-rasberry:latest
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "echo Inference from PostStart > /usr/share/mesagge"]
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - sleep 5
+        name: mnist-inference  # fastapi
+        ports:
+        - containerPort: 8000
+          #hostPort: 8001
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 50
+          periodSeconds: 100
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 50
+          periodSeconds: 100
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /workspace
+          name: inference-disc-storage
+      restartPolicy: Always
+      volumes:
+      - name: inference-disc-storage
+        persistentVolumeClaim:
+          claimName: inference-weights-claim
+
