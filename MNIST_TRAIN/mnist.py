@@ -104,7 +104,7 @@ def main(argv):
 
     model = Net().to(device)
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
-
+    torch.save(model.state_dict(), MODEL_PATH, _use_new_zipfile_serialization=False)
     for epoch in range(1, EPOCHS + 1):
         train(model, device, train_loader, optimizer, epoch, MODEL_PATH)
         test(model, device, test_loader)
